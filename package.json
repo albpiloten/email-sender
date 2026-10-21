@@ -1,0 +1,13 @@
+{
+  "name": "email-sender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Send an email to a list of recipients via SMTP",
+  "main": "send.js",
+  "scripts": {
+    "send": "node send.js"
+  },
+  "dependencies": {
+    "nodemailer": "^10.1.7"
+  }
+}
