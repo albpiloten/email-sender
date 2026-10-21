@@ -1,21 +1,26 @@
 # ---------- SMTP SETTINGS ----------
-SMTP_HOST=smtp.sinbfir.org.br
+SMTP_HOST=mail.optonline.net
 SMTP_PORT=587
 # true for port 465 (SSL), false for 587/25 (STARTTLS)
 SMTP_SECURE=false
-SMTP_USER=sandro@sinbfir.org.br
-SMTP_PASS=sinbfir.sandro
+SMTP_REQUIRE_TLS=true
+SMTP_USER=mlynch0404@optonline.net
+SMTP_PASS=Lipton04
 
 # ---------- SENDER ----------
-FROM_NAME=NAV
-FROM_EMAIL=sandro@sinbfir.org.br
+FROM_NAME=
+FROM_EMAIL=mlynch0404@optonline.net
 # optional
-REPLY_TO=sandro@sinbfir.org.br
+REPLY_TO=mlynch0404@optonline.net
 
 # ---------- SENDING OPTIONS ----------
 # text or html
-CONTENT_FORMAT=text
+CONTENT_FORMAT=html
+
+# Optional SOCKS5 proxy. Leave empty to connect directly.
+# Example: socks5://username:password@proxy-host:proxy-port
+SOCKS_PROXY=
 # pause between each email in milliseconds (0 = no pause)
-DELAY_MS=1000
+DELAY_MS=1
 # true = only print what would be sent, nothing goes out
 DRY_RUN=false

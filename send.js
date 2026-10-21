@@ -132,12 +132,24 @@ async function main() {
   console.log(` Dry run   : ${dryRun ? "YES (nothing will be sent)" : "no"}`);
   console.log("=================================================\n");
 
-  const transporter = nodemailer.createTransport({
+  const transportOptions = {
     host: env.SMTP_HOST,
     port: Number(env.SMTP_PORT),
     secure: bool(env.SMTP_SECURE, Number(env.SMTP_PORT) === 465),
+    requireTLS: bool(env.SMTP_REQUIRE_TLS, Number(env.SMTP_PORT) === 587),
+    tls: {
+      minVersion: "TLSv1.2",
+      rejectUnauthorized: true,
+    },
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-  });
+    ...(env.SOCKS_PROXY ? { proxy: env.SOCKS_PROXY } : {}),
+  };
+
+  const transporter = nodemailer.createTransport(transportOptions);
+
+  if (env.SOCKS_PROXY) {
+    transporter.set("proxy_socks_module", require("socks"));
+  }
 
   if (!dryRun) {
     try {
