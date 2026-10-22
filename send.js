@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 const ROOT = __dirname;
 const ENV_FILE = path.join(ROOT, ".env");
@@ -104,15 +105,42 @@ function fail(message) {
 // ---------- main ----------
 
 async function main() {
-  const env = loadEnv(ENV_FILE);
+  const env = { ...loadEnv(ENV_FILE), ...process.env };
+  const args = new Set(process.argv.slice(2));
+  const supportedArgs = new Set(["--dry-run", "--verify"]);
+  for (const arg of args) {
+    if (!supportedArgs.has(arg)) {
+      fail(`Unknown option "${arg}". Use --dry-run or --verify.`);
+    }
+  }
 
-  for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "FROM_EMAIL"]) {
+  const deliveryMethod = (env.DELIVERY_METHOD || "smtp").toLowerCase();
+  if (!["smtp", "resend"].includes(deliveryMethod)) {
+    fail('DELIVERY_METHOD must be either "smtp" or "resend".');
+  }
+
+  const requiredKeys =
+    deliveryMethod === "smtp"
+      ? ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "FROM_EMAIL"]
+      : ["RESEND_API_KEY", "FROM_EMAIL"];
+  for (const key of requiredKeys) {
     if (!env[key]) fail(`${key} is not set in .env`);
   }
 
   const isHtml = (env.CONTENT_FORMAT || "text").toLowerCase() === "html";
   const delayMs = Number(env.DELAY_MS || 0);
-  const dryRun = bool(env.DRY_RUN, false);
+  const dryRun = args.has("--dry-run") || bool(env.DRY_RUN, false);
+  const verifyOnly = args.has("--verify");
+
+  if (
+    deliveryMethod === "smtp" &&
+    (!Number.isInteger(Number(env.SMTP_PORT)) || Number(env.SMTP_PORT) < 1)
+  ) {
+    fail("SMTP_PORT must be a valid port number.");
+  }
+  if (!Number.isFinite(delayMs) || delayMs < 0) {
+    fail("DELAY_MS must be zero or a positive number.");
+  }
 
   const recipients = loadRecipients(EMAILS_FILE);
   const { subject, body } = loadContent(CONTENT_FILE);
@@ -120,44 +148,70 @@ async function main() {
   if (recipients.length === 0) fail("No valid recipients found in emails.txt");
 
   const from = env.FROM_NAME
-    ? `"${env.FROM_NAME}" <${env.FROM_EMAIL}>`
+    ? { name: env.FROM_NAME, address: env.FROM_EMAIL }
+    : env.FROM_EMAIL;
+  const fromLabel = env.FROM_NAME
+    ? `${env.FROM_NAME} <${env.FROM_EMAIL}>`
     : env.FROM_EMAIL;
 
   console.log("=================================================");
-  console.log(` SMTP      : ${env.SMTP_HOST}:${env.SMTP_PORT}`);
-  console.log(` From      : ${from}`);
+  console.log(` Provider  : ${deliveryMethod === "smtp" ? "SMTP" : "Resend API"}`);
+  if (deliveryMethod === "smtp") {
+    console.log(` SMTP      : ${env.SMTP_HOST}:${env.SMTP_PORT}`);
+  }
+  console.log(` From      : ${fromLabel}`);
   console.log(` Subject   : ${subject}`);
   console.log(` Format    : ${isHtml ? "html" : "text"}`);
   console.log(` Recipients: ${recipients.length}`);
   console.log(` Dry run   : ${dryRun ? "YES (nothing will be sent)" : "no"}`);
   console.log("=================================================\n");
 
-  const transportOptions = {
-    host: env.SMTP_HOST,
-    port: Number(env.SMTP_PORT),
-    secure: bool(env.SMTP_SECURE, Number(env.SMTP_PORT) === 465),
-    requireTLS: bool(env.SMTP_REQUIRE_TLS, Number(env.SMTP_PORT) === 587),
-    tls: {
-      minVersion: "TLSv1.2",
-      rejectUnauthorized: true,
-    },
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-    ...(env.SOCKS_PROXY ? { proxy: env.SOCKS_PROXY } : {}),
-  };
+  let transporter;
+  let resend;
 
-  const transporter = nodemailer.createTransport(transportOptions);
+  if (deliveryMethod === "smtp") {
+    const transportOptions = {
+      host: env.SMTP_HOST,
+      port: Number(env.SMTP_PORT),
+      secure: bool(env.SMTP_SECURE, Number(env.SMTP_PORT) === 465),
+      requireTLS: bool(env.SMTP_REQUIRE_TLS, Number(env.SMTP_PORT) === 587),
+      tls: {
+        minVersion: "TLSv1.2",
+        rejectUnauthorized: true,
+      },
+      connectionTimeout: Number(env.SMTP_CONNECTION_TIMEOUT_MS || 15000),
+      greetingTimeout: Number(env.SMTP_GREETING_TIMEOUT_MS || 10000),
+      socketTimeout: Number(env.SMTP_SOCKET_TIMEOUT_MS || 30000),
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+      ...(env.SOCKS_PROXY ? { proxy: env.SOCKS_PROXY } : {}),
+    };
 
-  if (env.SOCKS_PROXY) {
-    transporter.set("proxy_socks_module", require("socks"));
+    transporter = nodemailer.createTransport(transportOptions);
+    if (env.SOCKS_PROXY) {
+      transporter.set("proxy_socks_module", require("socks"));
+    }
+
+    if (!dryRun || verifyOnly) {
+      try {
+        await transporter.verify();
+        console.log("SMTP connection OK.\n");
+      } catch (err) {
+        fail(`Could not connect to SMTP server: ${err.message}`);
+      }
+    }
+  } else {
+    resend = new Resend(env.RESEND_API_KEY);
   }
 
-  if (!dryRun) {
-    try {
-      await transporter.verify();
-      console.log("SMTP connection OK.\n");
-    } catch (err) {
-      fail(`Could not connect to SMTP server: ${err.message}`);
+  if (verifyOnly) {
+    if (deliveryMethod === "smtp") {
+      console.log("SMTP settings verified. No email was sent.");
+      transporter.close();
+    } else {
+      console.log("Resend configuration is present. No email was sent.");
+      console.log("A Resend API key can only be fully tested by sending an email.");
     }
+    return;
   }
 
   let sent = 0;
@@ -168,12 +222,21 @@ async function main() {
     const vars = { name, email };
     const label = `[${i + 1}/${recipients.length}] ${email}`;
 
-    const message = {
+    const personalizedSubject = fill(subject, vars);
+    const personalizedBody = fill(body, vars);
+    const smtpMessage = {
       from,
-      to: name !== email ? `"${name}" <${email}>` : email,
-      subject: fill(subject, vars),
+      to: name !== email ? { name, address: email } : email,
+      subject: personalizedSubject,
       ...(env.REPLY_TO ? { replyTo: env.REPLY_TO } : {}),
-      ...(isHtml ? { html: fill(body, vars) } : { text: fill(body, vars) }),
+      ...(isHtml ? { html: personalizedBody } : { text: personalizedBody }),
+    };
+    const resendMessage = {
+      from: fromLabel,
+      to: name !== email ? `${name} <${email}>` : email,
+      subject: personalizedSubject,
+      ...(env.REPLY_TO ? { replyTo: env.REPLY_TO } : {}),
+      ...(isHtml ? { html: personalizedBody } : { text: personalizedBody }),
     };
 
     if (dryRun) {
@@ -181,7 +244,12 @@ async function main() {
       sent++;
     } else {
       try {
-        await transporter.sendMail(message);
+        if (deliveryMethod === "smtp") {
+          await transporter.sendMail(smtpMessage);
+        } else {
+          const { error } = await resend.emails.send(resendMessage);
+          if (error) throw new Error(error.message || JSON.stringify(error));
+        }
         console.log(`${label}  sent`);
         sent++;
       } catch (err) {
@@ -199,7 +267,7 @@ async function main() {
   console.log(` Done. Sent: ${sent}   Failed: ${failed}`);
   console.log("-------------------------------------------------");
 
-  transporter.close();
+  if (transporter) transporter.close();
   process.exit(failed > 0 ? 1 : 0);
 }
 

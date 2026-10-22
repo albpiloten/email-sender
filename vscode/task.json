@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Send Emails",
+      "type": "shell",
+      "command": "node send.js",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Install dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    }
+  ]
+}

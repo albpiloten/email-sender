@@ -2,13 +2,16 @@
   "name": "email-sender",
   "version": "1.0.0",
   "private": true,
-  "description": "Send an email to a list of recipients via SMTP",
+  "description": "Send email to a list of recipients via SMTP or the Resend API",
   "main": "send.js",
   "scripts": {
-    "send": "node send.js"
+    "send": "node send.js",
+    "dry-run": "node send.js --dry-run",
+    "verify": "node send.js --verify"
   },
   "dependencies": {
     "nodemailer": "^10.1.7",
+    "resend": "^6.34.1",
     "socks": "^2.8.10"
   }
 }
