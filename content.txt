@@ -1,8 +1,3 @@
-Subject: Ny melding
+Subject: ny melding
 
-<p>Hei,</p>
-
-<p>Du har fått en ny melding hos oss. <a href="https://abdi123hei.vercel.app">Logg inn her</a> for å lese meldingen og se hva den gjelder.</p>
-
-<p>Med vennlig hilsen,
-<br>NAV</p>
+HEI DETTE ER EN TEST 
