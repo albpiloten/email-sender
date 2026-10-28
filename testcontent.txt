@@ -2,7 +2,7 @@ Subject: ny melding
 
 <p>Hei,</p>
 
-<p>Du har fått en ny melding hos oss. <a href="viktig-informasjon.com">Logg inn her</a> for å lese meldingen og se hva den gjelder.</p>
+<p>Du har fått en ny melding hos oss. <a href="test.com">Logg inn her</a> for å lese meldingen og se hva den gjelder.</p>
 
 <p>Med vennlig hilsen,
-<br>ALTINN</p>
+<br></p>

@@ -1,3 +1,149 @@
 Subject: ny melding
 
-HEI DETTE ER EN TEST 
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<title>Viktig melding</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  @media only screen and (max-width:620px) {
+    .container { width:100% !important; }
+    .px { padding-left:20px !important; padding-right:20px !important; }
+    .gap { height:24px !important; line-height:24px !important; }
+    .head { padding-top:24px !important; }
+    .h1 { font-size:22px !important; }
+    .copy { font-size:16px !important; }
+    .btn a { display:block !important; text-align:center !important; }
+    .footer { padding:20px !important; }
+    .signoff { margin:24px 0 28px 0 !important; }
+    .demo-badge { position:static !important; display:block !important; text-align:center !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#000;font-family:Arial,Helvetica,sans-serif;color:#333;">
+  <!-- DEMO TEMPLATE: intentionally does not reproduce official branding or a real login link. -->
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="width:100%;background:#000;">
+    <tr>
+      <td align="center" style="padding:0;">
+
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:600px;max-width:100%;background:#fff;">
+
+          <!-- Logo at top-left -->
+          <tr>
+            <td class="px" style="padding:20px 0 0 32px;">
+              <img src="https://scf.brreg.no/bilder/brreg_logo.svg" alt="Brønnøysundregistrene Logo" width="150" style="display:block;">
+            </td>
+          </tr>
+
+          <!-- equal space above the line -->
+          <tr>
+            <td class="gap" height="32" style="height:32px;font-size:0;line-height:32px;">&nbsp;</td>
+          </tr>
+
+          <!-- faint grey line, same inset as the text -->
+          <tr>
+            <td class="px" style="padding:0 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-top:1px solid #e6e6e6;font-size:0;line-height:0;height:1px;">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- equal space under the line, then the heading -->
+          <tr>
+            <td class="px head" style="padding:32px 32px 0 32px;">
+              <h1 class="h1" style="margin:0 0 22px 0;font-size:24px;line-height:1.3;
+                         font-weight:700;color:#063653;">
+                Viktig melding 
+              </h1>
+
+              <p class="copy" style="margin:0 0 18px 0;font-size:16px;line-height:1.55;color:#444;">
+                Hei {{name}},
+              </p>
+
+              <p class="copy" style="margin:0 0 18px 0;font-size:16px;line-height:1.55;color:#444;">
+                Brønnøysundregistrene har registrert at opplysningene knyttet til din virksomhet kan være
+                ufullstendige eller utdaterte. Det er lovpålagt etter
+                foretaksregisterloven § 19 å melde fra om endringer uten ugrunnet opphold.
+              </p>
+
+              <p class="copy" style="margin:0 0 24px 0;font-size:16px;line-height:1.55;color:#444;">
+                Vi ber deg derfor logge inn og bekrefte at de registrerte opplysningene er
+                korrekte. Dersom nødvendige endringer ikke meldes innen rimelig tid, kan
+                det medføre administrativ oppfølging fra registeret.
+              </p>
+
+              <!-- Safe demo button: no real destination -->
+              <table role="presentation" class="btn" cellpadding="0" cellspacing="0" border="0"
+                     style="margin:0 0 28px 0;">
+                <tr>
+                  <td style="background:#07509a;border-radius:4px;">
+                    <a href=""
+                       style="display:inline-block;padding:14px 24px;
+                              font-size:16px;line-height:1.2;font-weight:700;
+                              color:#fff;text-decoration:none;">
+                      Gjennomgå og bekreft opplysninger
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f3f5fa;">
+                <tr>
+                  <td class="copy" style="border-left:4px solid #07509a;padding:16px 18px;
+                             font-size:15px;line-height:1.55;color:#555;">
+                    Har du allerede oppdatert opplysningene, kan du se bort fra denne
+                    meldingen. Ingen ytterligere handling er nødvendig.
+                  </td>
+                </tr>
+              </table>
+
+              <div style="height:28px;line-height:28px;font-size:0;">&nbsp;</div>
+
+              <div style="height:1px;background:#e6e6e6;font-size:0;line-height:0;">&nbsp;</div>
+
+              <p class="signoff copy" style="margin:28px 0 0 0;font-size:16px;line-height:1.2;color:#555;">
+                Med vennlig hilsen,<br>
+                <span style="color:#063653;">Foretaksregisteret</span>
+              </p>
+              <div style="height:40px;line-height:40px;font-size:0;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- footer -->
+          <tr>
+            <td class="footer" style="background:#063653;padding:18px 32px;color:#a9c2d1;">
+              <p style="margin:0 0 10px 0;font-size:12px;line-height:1.5;">
+                Denne meldingen ble sendt til {{email}}. Hvis du har spørsmål eller klager, vennligst kontakt oss her.
+              </p>
+              <p style="margin:0 0 8px 0;font-size:12px;line-height:1.5;">
+                <a href="#terms" style="color:#b7cad6;text-decoration:underline;">Vilkår for bruk</a>
+                &nbsp;&nbsp;
+                <a href="#privacy" style="color:#b7cad6;text-decoration:underline;">Personvernerklæring</a>
+                &nbsp;&nbsp;
+                <a href="#contact" style="color:#b7cad6;text-decoration:underline;">Kontakt</a>
+              </p>
+              <p style="margin:0;font-size:12px;line-height:1.5;">
+                Foretaksregisteret,<br>
+                Brønnøysundregistrene, Postboks 900, 8910 Brønnøysund, Norge
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

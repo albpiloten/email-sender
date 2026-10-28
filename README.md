@@ -3,9 +3,14 @@
 ## Setup
 
 1. Put the delivery settings in `.env`.
-2. Put one recipient per line in `emails.txt`. A name is optional:
-   `person@example.com,Person Name`
+2. Choose how recipient names are found with `NAME_SOURCE` in `.env`:
+   - `NAME_SOURCE=email` takes the name from the part before `@`. For example,
+     `adam@gmail.com` becomes `adam`.
+   - `NAME_SOURCE=column` takes the name from the comma-separated column beside
+     the email. Each line must use the format `person@example.com,Person Name`.
 3. Put the subject and body in `content.txt`.
+   Use `{{name}}` wherever the recipient's name should appear, for example
+   `Hei {{name}},`. You can also use `{{email}}`.
 
 ### SMTP
 

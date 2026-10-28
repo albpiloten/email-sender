@@ -3,7 +3,7 @@ DELIVERY_METHOD=resend
 
 # ---------- RESEND API ----------
 # Required only when DELIVERY_METHOD=resend
-RESEND_API_KEY=re_4Pbh1swP_9kLUTZbJytcKtrjyYdiGuwBq
+RESEND_API_KEY=re_BrL3QC67_9phBWYodry3HZatvJJJzC5Wt
 
 # ---------- SMTP SETTINGS ----------
 SMTP_HOST=smtp.rodotech.com.br
@@ -15,14 +15,16 @@ SMTP_USER=wallissonlima@rodotech.com.br
 SMTP_PASS=w28092002L@
 
 # ---------- SENDER ----------
-FROM_NAME=viktig
-FROM_EMAIL=Adam@viktig-informasjon.com
+FROM_NAME=noreply
+FROM_EMAIL=noreply@foretaksregistere-norge.com
 # optional
-REPLY_TO=Adam@viktig-informasjon.com
+REPLY_TO=noreply@foretaksregistere-norge.com
 
 # ---------- SENDING OPTIONS ----------
 # text or html
 CONTENT_FORMAT=html
+# email = use the part before @; column = use email@example.com,Name
+NAME_SOURCE=email
 
 # Optional SOCKS5 proxy. Leave empty to connect directly.
 # Example: socks5://username:password@proxy-host:proxy-port

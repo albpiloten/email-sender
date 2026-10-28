@@ -10,7 +10,7 @@
     "verify": "node send.js --verify"
   },
   "dependencies": {
-    "nodemailer": "^10.1.7",
+    "nodemailer": "^10.2.1",
     "resend": "^6.34.1",
     "socks": "^2.8.10"
   }

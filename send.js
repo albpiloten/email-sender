@@ -28,14 +28,22 @@ function loadEnv(file) {
       (value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))
     ) {
-      value = value.slice(1, -1);
+      value = value.slice(1, -1).trim();
     }
     env[key] = value;
   }
   return env;
 }
 
-function loadRecipients(file) {
+function nameFromEmail(email) {
+  return email
+    .slice(0, email.lastIndexOf("@"))
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function loadRecipients(file, nameSource) {
   if (!fs.existsSync(file)) {
     fail(`Missing ${path.basename(file)} file.`);
   }
@@ -46,13 +54,18 @@ function loadRecipients(file) {
     if (!line || line.startsWith("#")) continue;
     const [emailPart, ...nameParts] = line.split(",");
     const email = emailPart.trim();
-    const name = nameParts.join(",").trim() || email;
+    const columnName = nameParts.join(",").trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       console.warn(`  ! skipping invalid address: "${line}"`);
       continue;
     }
+    if (nameSource === "column" && !columnName) {
+      console.warn(`  ! skipping address without a name column: "${line}"`);
+      continue;
+    }
     if (seen.has(email.toLowerCase())) continue;
     seen.add(email.toLowerCase());
+    const name = nameSource === "column" ? columnName : nameFromEmail(email);
     recipients.push({ email, name });
   }
   return recipients;
@@ -93,6 +106,44 @@ function bool(value, fallback) {
   return /^(true|1|yes|on)$/i.test(value);
 }
 
+function stripInvisible(value) {
+  return String(value || "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\u00A0/g, " ")
+    .trim();
+}
+
+const BARE_EMAIL =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
+function extractEmail(value) {
+  const cleaned = stripInvisible(value);
+  const bracketed = cleaned.match(/<([^<>\s]+)>/);
+  if (bracketed && BARE_EMAIL.test(bracketed[1])) return bracketed[1];
+  const found = cleaned.match(
+    /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+/
+  );
+  return found ? found[0] : cleaned;
+}
+
+function displayNameForResend(name) {
+  const cleaned = stripInvisible(name)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[^\p{L}\p{N} .'-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned || cleaned.includes("@")) return "";
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} .'-]*$/u.test(cleaned)) return "";
+  return cleaned;
+}
+
+function formatResendAddress(name, email) {
+  const address = extractEmail(email);
+  if (!BARE_EMAIL.test(address)) return "";
+  const display = displayNameForResend(name);
+  return display ? `${display} <${address}>` : address;
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -128,10 +179,14 @@ async function main() {
   }
 
   const isHtml = (env.CONTENT_FORMAT || "text").toLowerCase() === "html";
+  const nameSource = (env.NAME_SOURCE || "email").toLowerCase();
   const delayMs = Number(env.DELAY_MS || 0);
   const dryRun = args.has("--dry-run") || bool(env.DRY_RUN, false);
   const verifyOnly = args.has("--verify");
 
+  if (!["email", "column"].includes(nameSource)) {
+    fail('NAME_SOURCE must be either "email" or "column".');
+  }
   if (
     deliveryMethod === "smtp" &&
     (!Number.isInteger(Number(env.SMTP_PORT)) || Number(env.SMTP_PORT) < 1)
@@ -142,17 +197,27 @@ async function main() {
     fail("DELAY_MS must be zero or a positive number.");
   }
 
-  const recipients = loadRecipients(EMAILS_FILE);
+  const recipients = loadRecipients(EMAILS_FILE, nameSource);
   const { subject, body } = loadContent(CONTENT_FILE);
 
   if (recipients.length === 0) fail("No valid recipients found in emails.txt");
 
-  const from = env.FROM_NAME
-    ? { name: env.FROM_NAME, address: env.FROM_EMAIL }
-    : env.FROM_EMAIL;
-  const fromLabel = env.FROM_NAME
-    ? `${env.FROM_NAME} <${env.FROM_EMAIL}>`
-    : env.FROM_EMAIL;
+  const fromAddress = extractEmail(env.FROM_EMAIL);
+  if (!BARE_EMAIL.test(fromAddress)) {
+    fail(
+      "FROM_EMAIL must be an address like sender@yourdomain.com. Resend only accepts email@example.com or Name <email@example.com>."
+    );
+  }
+  const fromName = displayNameForResend(env.FROM_NAME);
+  if (stripInvisible(env.FROM_NAME) && !fromName) {
+    console.warn(
+      "  ! FROM_NAME was left off the sender. Resend rejects that name, so the email is sent from the address only."
+    );
+  }
+  const from = fromName
+    ? { name: fromName, address: fromAddress }
+    : fromAddress;
+  const fromLabel = formatResendAddress(fromName, fromAddress);
 
   console.log("=================================================");
   console.log(` Provider  : ${deliveryMethod === "smtp" ? "SMTP" : "Resend API"}`);
@@ -162,6 +227,7 @@ async function main() {
   console.log(` From      : ${fromLabel}`);
   console.log(` Subject   : ${subject}`);
   console.log(` Format    : ${isHtml ? "html" : "text"}`);
+  console.log(` Names     : ${nameSource === "email" ? "from email address" : "from name column"}`);
   console.log(` Recipients: ${recipients.length}`);
   console.log(` Dry run   : ${dryRun ? "YES (nothing will be sent)" : "no"}`);
   console.log("=================================================\n");
@@ -231,9 +297,10 @@ async function main() {
       ...(env.REPLY_TO ? { replyTo: env.REPLY_TO } : {}),
       ...(isHtml ? { html: personalizedBody } : { text: personalizedBody }),
     };
+    const resendTo = formatResendAddress(name !== email ? name : "", email);
     const resendMessage = {
       from: fromLabel,
-      to: name !== email ? `${name} <${email}>` : email,
+      to: resendTo || email,
       subject: personalizedSubject,
       ...(env.REPLY_TO ? { replyTo: env.REPLY_TO } : {}),
       ...(isHtml ? { html: personalizedBody } : { text: personalizedBody }),
